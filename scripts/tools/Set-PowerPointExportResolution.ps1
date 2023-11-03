@@ -1,0 +1,2 @@
+# https://docs.microsoft.com/en-us/office/troubleshoot/powerpoint/change-export-slide-resolution
+New-ItemProperty -Path HKCU:\Software\Microsoft\Office\16.0\PowerPoint\Options -Name ExportBitmapResolution -PropertyType DWord -Value 300
