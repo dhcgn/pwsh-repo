@@ -2,25 +2,10 @@
 .SYNOPSIS
     My personal init script to setup my environment
 #>
-
-# workplace-sync
-if (-not (Test-Path "C:\ws")) {
-    Write-Host "Creating C:\ws"
-    New-Item -Path "C:\ws" -ItemType Directory
-}
-
-if (-not (Test-Path "C:\ws\workplace-sync.exe")) {
-    Write-Host "Downloading workplace-sync"
-    $url = "https://github.com/dhcgn/workplace-sync/releases/download/0.0.16/ws-0.0.16-windows-amd64.zip"
-    Invoke-WebRequest -Uri $url -OutFile "C:\ws\ws.zip"
-    Expand-Archive -Path "C:\ws\ws.zip" -DestinationPath "C:\ws"
-    Remove-Item "C:\ws\ws.zip"
-}
-
-# install bare minumum
-if(-Not (Test-Path "C:\ws\age.exe")) {
-    . "C:\ws\workplace-sync.exe" -host ws.hdev.io -name age
-}
+param(
+    [switch]
+    $GeneratedSharedProfileFromLocal = $false
+)
 
 # setup profiles
 if (-not (Test-Path $PROFILE)) {
@@ -28,19 +13,74 @@ if (-not (Test-Path $PROFILE)) {
 }
 
 $profiles = Resolve-Path C:\Users\*\OneDrive\Documents\*\*_profile.ps1
-$generatedSharedProfile = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/dhcgn/pwsh-repo/merge-with-shared-profile/profile/user.ps1" -UseBasicParsing | %{$_.RawContent}
+
+$generatedSharedProfile = $null
+if ($GeneratedSharedProfileFromLocal -eq $true) {
+    $generatedSharedProfile = Get-Content (Join-Path $PSScriptRoot "profile\shell.ps1")
+}
+else {
+    $url = "https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/shell.ps1"
+    $generatedSharedProfile = Invoke-WebRequest -Uri  $url -UseBasicParsing | ForEach-Object { $_.Content }
+}
+
 $header = "#BEGIN generated personal profile"
 $footer = "#END generated personal profile"
 foreach ($profile in $profiles) {
     $content = Get-Content $profile
     if ($content -notcontains $header) {
+        Write-Host "Adding generated profile to $profile"
         $content += $generatedSharedProfile
         Set-Content $profile $content
         continue
     }
 
+    Write-Host "Updating generated profile in $profile"
     $start = $content.IndexOf($header)
     $end = $content.IndexOf($footer)
-    $content = $content[0..($start-1)] + $generatedSharedProfile + $content[($end+1)..($content.Length-1)]
+    
+    if ($start -eq 0 -and $end -eq ($content.Length - 1)) {
+        $content = $generatedSharedProfile
+    }
+    elseif ($start -eq 0) {
+        $content = $generatedSharedProfile + $content[($end + 1)..($content.Length)]
+    }
+    else {
+        $content = $content[0..($start - 1)] + $generatedSharedProfile + $content[($end + 1)..($content.Length - 1)]
+    }
+
     Set-Content $profile $content
+}
+
+# Set or update the local profile
+
+$localProfileFolder = Join-Path $env:USERPROFILE "Local\SharedScripting\"
+if (-not (Test-Path $localProfileFolder)) {
+    Write-Host "Creating $localProfileFolder"
+    New-Item -Path $localProfileFolder -ItemType Directory
+}
+
+$localProfileFile = Join-Path $localProfileFolder "sharedprofile.ps1"
+if (-not (Test-Path $localProfileFile)) {
+    Write-Host "Creating $localProfileFile"
+    New-Item -Path $localProfileFile -ItemType File
+}
+
+$localUserProfileRemote = $null
+if ($GeneratedSharedProfileFromLocal -eq $true) {
+    $localUserProfileRemote = Get-Content (Join-Path $PSScriptRoot "profile\sharedprofile.ps1")
+}
+else {
+    $url = "https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/local.ps1"
+    $localUserProfileRemote = Invoke-WebRequest -Uri  $url -UseBasicParsing | ForEach-Object { $_.Content }
+}
+
+$versionRemote = $localUserProfileRemote | Select-String -Pattern "#Version: (.*)" | ForEach-Object { $_.Matches.Groups[1].Value }
+$versionLocal = Select-String -Path $localProfileFile -Pattern "#Version: (.*)" | ForEach-Object { $_.Matches.Groups[1].Value }
+
+if ($versionRemote -ne $versionLocal) {
+    Write-Host "Updating $localProfileFile, from '$versionLocal' to '$versionRemote'"
+    $localUserProfileRemote | Set-Content $localProfileFile
+}
+else {
+    Write-Host "Skipping $localProfileFile, already up to date with '$versionRemote'"
 }
