@@ -44,11 +44,12 @@ function global:Encrypt-File {
         $cmd += " -r $($key) "
     }
     if ($AsciiArmor) {
-        $cmd += " -a $in"
+        $cmd += " -a  "
     }
     else {
-        $cmd += " -o $out $in"
+        $cmd += " -o $out  "
     }
+    $cmd += " $in "
     
     Invoke-Expression $cmd
 
