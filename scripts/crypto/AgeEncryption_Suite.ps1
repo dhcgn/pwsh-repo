@@ -1,4 +1,10 @@
+<#
+.SYNOPSIS
+    Encrypt files with age encryption with multiple keys defiend in $AgeEncryptionKeys
 
+.EXAMPLE
+    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-File -File $f | %{Decrypt-File -File $_ | Get-Content}      
+#>
 function global:Encrypt-File {
     param(
         [Parameter(
@@ -8,7 +14,7 @@ function global:Encrypt-File {
         )]
         [System.IO.FileInfo] $File,
         [Parameter(Mandatory = $false)]
-        [string] $Destination
+        [System.IO.FileInfo] $Destination
     )
 
     Test-AgeCapailities
@@ -20,7 +26,7 @@ function global:Encrypt-File {
 
     [string]$in = Resolve-Path $File
     $out = $in + ".age"
-    if (-not [System.String]::IsNullOrWhiteSpace($Destination)) {
+    if ($Destination -ne $null) {
         $out = $Destination
     }
 
@@ -29,25 +35,27 @@ function global:Encrypt-File {
     }
 
     $cmd = "age -e "
-    foreach ($key in $AgeEncryptionKeys) {
-        $cmd += "-r $key "
+    foreach ($key in $AgeEncryptionKeys.Values) {
+        $cmd += " -r $($key) "
     }
+    $cmd += " -o $out $in"
 
-    Write-Verbose $cmd
+    Invoke-Expression $cmd
 
-    age -e `
-        -r $keyList["SoftPrivate"] `
-        -r $keyList["SoftWork"] `
-        -o $out `
-        $in 
-
-    if (-not $?) {
+    if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to encrypt file"
         return
     }
     Get-ChildItem $out
 }
 
+<#
+.SYNOPSIS
+    Decrypt files with age encryption with the private key filepath defiend in $AgeDecryptionKey
+
+.EXAMPLE
+    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-File -File $f | %{Decrypt-File -File $_ | Get-Content}    
+#>
 function global:Decrypt-File {
     param(
         [Parameter(
@@ -64,7 +72,7 @@ function global:Decrypt-File {
 
     $mainkeyFile = $fileList.AgeEncryptedMainKey
 
-    if (-not (Test-Path $mainkeyFile)) {
+    if (-not (Test-Path $AgeDecryptionKey)) {
         Write-Error "Main key file not found at $mainkeyFile"
         return
     }
@@ -76,10 +84,14 @@ function global:Decrypt-File {
         $out = $out + ("_{0:yyyy-MM-dd_HH-mm-ss-fff}.plain" -f (Get-Date))
     }
 
-    age -d `
-        -i $mainkeyFile  `
-        -o $out `
-        $in 
+    $cmd = "age -d -i $AgeDecryptionKey -o $out $in"
+    Invoke-Expression $cmd
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to decrypt file"
+        return
+    }
+    Get-ChildItem $out
 }
 
 function Test-AgeCapailities {

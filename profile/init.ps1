@@ -16,7 +16,7 @@ $profiles = Resolve-Path C:\Users\*\OneDrive\Documents\*\*_profile.ps1
 
 $generatedSharedProfile = $null
 if ($GeneratedSharedProfileFromLocal -eq $true) {
-    $generatedSharedProfile = Get-Content (Join-Path $PSScriptRoot "profile\shell.ps1")
+    $generatedSharedProfile = Get-Content (Join-Path $PSScriptRoot "shell.ps1")
 }
 else {
     $url = "https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/shell.ps1"
@@ -67,7 +67,7 @@ if (-not (Test-Path $localProfileFile)) {
 
 $localUserProfileRemote = $null
 if ($GeneratedSharedProfileFromLocal -eq $true) {
-    $localUserProfileRemote = Get-Content (Join-Path $PSScriptRoot "profile\sharedprofile.ps1")
+    $localUserProfileRemote = Get-Content (Join-Path $PSScriptRoot "sharedprofile.ps1")
 }
 else {
     $url = "https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/local.ps1"
