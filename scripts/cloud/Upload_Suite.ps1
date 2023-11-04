@@ -20,31 +20,8 @@ function global:Publish-FileUnprotected {
         $source = $temp
     }
 
-    if (-not (Test-Rclone)) {
-        return
-    }
+    $link = Publish-File -File $source
 
-    $hashsumhex = (Get-FileHash -Path $source -Algorithm SHA256).Hash
-    $hashData = [System.Convert]::FromHexString($hashsumhex) | Select-Object -First (64/8)
-    $base64sum = [System.Convert]::ToBase64String($hashData)
-    $base64sum = $base64sum.Replace("+", "").Replace("/", "").Replace("=", "")
-    
-
-    $rnd = Get-RandomSecure -Strength (128 / 8)
-    $dir = ("{0:yyyy-MM-dd}_{1}_{2}" -f (Get-Date), $rnd, $base64sum)
-    
-    $rcloneConf = Join-Path $env:USERPROFILE ".rclone\rclone.conf"
-    $publicHost = Get-Content -Path (Join-Path $env:USERPROFILE ".rclone\host.txt")
-    $sanitzedFileName = (Get-ChildItem $source).Name -replace "[^a-zA-Z0-9+\._]","-"
-
-    rclone copyto $source r2:pub-sync/_/$dir/$sanitzedFileName --progress --config $rcloneConf 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "rclone upload failed."
-        return
-    }
-
-    $urlencodedFilename = [uri]::EscapeDataString($sanitzedFileName)
-    $link = ("https://$publicHost/_/{0:yyyy-MM-dd}_{1}_{2}/{3}" -f (Get-Date), $rnd, $base64sum, $urlencodedFilename)
     Write-Host "Link: $link"
 }
 
@@ -61,17 +38,12 @@ function global:Publish-FilePasswortProtected {
         return
     }
 
-    if (-not (Test-Rclone)) {
-        return
-    }
-
     $7zipExe = "C:\Program Files\7-Zip\7z.exe"
     if(-not (Test-Path $7zipExe )){
         Write-Error "7zip not at $7zipExe found, please install it first"
         return
     }
  
-    $rndDir = Get-RandomSecure -Strength (128 / 8)
     $rnd7zip = Get-RandomSecure -Strength (64 / 8)
     $7zipname = ("{0}.7z" -f $rnd7zip)
     $7zipfile = Join-Path $env:TEMP $7zipname
@@ -84,20 +56,10 @@ function global:Publish-FilePasswortProtected {
         return
     }
 
-    $rcloneConf = Join-Path $env:USERPROFILE ".rclone\rclone.conf"
-    $publicHost = Get-Content -Path (Join-Path $env:USERPROFILE ".rclone\host.txt")
-
-    $dir = ("{0:yyyy-MM-dd}_{1}" -f (Get-Date), $rndDir)
-    rclone copy $7zipfile r2:pub-sync/_/$dir/ --progress --config $rcloneConf
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to upload 7zip file to hosting with rclone."
-        return
-    }
+    $link = Publish-File -File $7zipfile
 
     Remove-Item $7zipfile
 
-    $link = ("https://$publicHost/_/{0}/{1}" -f $dir, $7zipname)
-    
     Write-Host ""
     Write-Host "Link: $link"
     Write-Host "Pass: $pass"
@@ -117,6 +79,51 @@ function global:Publish-FilePasswortProtected {
 #     }
 #     Write-Host ("Link: {0}" -f $r.Content)
 # }
+
+function global:Publish-File {
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.IO.FileInfo]
+        $File
+    )
+
+    $source = (Resolve-Path $File).Path
+    if ($null -eq $source) {
+        Write-Error "File not found: $File"
+        return
+    }
+
+    if (Test-Path -Path $File -PathType Container) {
+        Write-Error "Directory not supported"
+    }
+
+    if (-not (Test-Rclone)) {
+        return
+    }
+
+    $hashsumhex = (Get-FileHash -Path $source -Algorithm SHA256).Hash
+    $hashData = [System.Convert]::FromHexString($hashsumhex) | Select-Object -First (64/8)
+    $base64sum = [System.Convert]::ToBase64String($hashData)
+    $base64sum = $base64sum.Replace("+", "-").Replace("/", "_").Replace("=", "")
+    
+
+    $rnd = Get-RandomSecure -Strength (128 / 8)
+    $dir = ("{0:yyyy-MM-dd}_{1}_{2}" -f (Get-Date), $rnd, $base64sum)
+    
+    $rcloneConf = Join-Path $env:USERPROFILE ".rclone\rclone.conf"
+    $publicHost = Get-Content -Path (Join-Path $env:USERPROFILE ".rclone\host.txt")
+    $sanitzedFileName = (Get-ChildItem $source).Name -replace "[^a-zA-Z0-9+\._]","-"
+
+    rclone copyto $source r2:pub-sync/_/$dir/$sanitzedFileName --progress --config $rcloneConf | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "rclone upload failed."
+        return
+    }
+
+    $urlencodedFilename = [uri]::EscapeDataString($sanitzedFileName)
+    $link = ("https://$publicHost/_/{0:yyyy-MM-dd}_{1}_{2}/{3}" -f (Get-Date), $rnd, $base64sum, $urlencodedFilename)
+    $link
+}
 
 function global:Get-FileUnprotected {
     if (-not (Test-Rclone)) {
