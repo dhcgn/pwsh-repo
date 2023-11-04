@@ -14,7 +14,12 @@ function global:Encrypt-File {
         )]
         [System.IO.FileInfo] $File,
         [Parameter(Mandatory = $false)]
-        [System.IO.FileInfo] $Destination
+        [System.IO.FileInfo] $Destination,
+        [Parameter(Mandatory = $true)]
+        [String[]] $Receipents,
+        [Parameter(Mandatory = $false)]
+        [Switch] $AsciiArmor = $false
+
     )
 
     Test-AgeCapailities
@@ -35,19 +40,68 @@ function global:Encrypt-File {
     }
 
     $cmd = "age -e "
-    foreach ($key in $AgeEncryptionKeys.Values) {
+    foreach ($key in $Receipents) {
         $cmd += " -r $($key) "
     }
-    $cmd += " -o $out $in"
-
+    if ($AsciiArmor) {
+        $cmd += " -a $in"
+    }
+    else {
+        $cmd += " -o $out $in"
+    }
+    
     Invoke-Expression $cmd
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to encrypt file"
         return
     }
-    Get-ChildItem $out
+    if (-not $AsciiArmor) {
+        Get-ChildItem $out
+    }
 }
+
+function global:Encrypt-FileWithMyKeys {
+    param(
+        [Parameter(
+            Position = 0,
+            Mandatory = $true,
+            ValueFromPipeline = $true
+        )]
+        [System.IO.FileInfo] $File,
+        [Parameter(Mandatory = $false)]
+        [System.IO.FileInfo] $Destination,
+        [Parameter(Mandatory = $false)]
+        [Switch] $AsciiArmor = $false
+    )
+
+    Encrypt-File -File $File -Destination $Destination -Receipents @($AgeEncryptionKeys.Values) -AsciiArmor:$AsciiArmor
+}
+
+function global:Encrypt-FileWithMyHSMKeys {
+    param(
+        [Parameter(
+            Position = 0,
+            Mandatory = $true,
+            ValueFromPipeline = $true
+        )]
+        [System.IO.FileInfo] $File,
+        [Parameter(Mandatory = $false)]
+        [System.IO.FileInfo] $Destination,
+        [Parameter(Mandatory = $false)]
+        [Switch] $AsciiArmor = $false
+    )
+
+    if (-Not(Test-Path "C:\ProgramData\AgePluginYubikey")) {
+        Write-Error "AgePluginYubikey not installed, install with Install-AgePluginYubikey and set it to your PATH"
+    }
+    if ($env:Path -notlike "*C:\ProgramData\AgePluginYubikey*") {
+        Write-Error "AgePluginYubikey not set to your PATH"
+    }
+
+    Encrypt-File -File $File -Destination $Destination -Receipents @($AgeEncryptionHSMKeys.Values) -AsciiArmor:$AsciiArmor
+}
+
 
 <#
 .SYNOPSIS
@@ -125,6 +179,16 @@ function Test-AgeCapailities {
         Write-Error 'AgeEncryptionKeys not found, must be set your $PROFILE'
         return
     }
+
+    if ($AgeDecryptionKey -eq $null) {
+        Write-Error 'AgeDecryptionKey not found, must be set your $PROFILE'
+        return
+    }
+}
+
+$f = "C:\ProgramData\AgePluginYubikey"
+if (Test-Path $f) {
+    $env:Path += ";$f"
 }
 
 Test-AgeCapailities
