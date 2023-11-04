@@ -1,6 +1,3 @@
-
-
-
 $scripts = Get-ChildItem $PSScriptRoot -File -Recurse -Exclude *_Suite.ps1
 $scripts | ForEach-Object {
     Set-Alias -Name $_.BaseName -Value $_.FullName -Scope Global

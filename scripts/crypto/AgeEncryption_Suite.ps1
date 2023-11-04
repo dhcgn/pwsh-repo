@@ -94,6 +94,25 @@ function global:Decrypt-File {
     Get-ChildItem $out
 }
 
+function Install-AgePluginYubikey {
+    $f = "C:\ProgramData\AgePluginYubikey"
+    if (-Not (Test-Path $f)) {
+        New-Item -ItemType Directory -Path $f
+    }
+    Get-ChildItem -Path $f -File -Include *.exe -Recurse | Get-FileHash | ForEach-Object { Write-Host "Before: $($_.Hash) $($_.Path | Get-ChildItem | Select-Object name)" }
+  
+    $url = "https://github.com/str4d/age-plugin-yubikey/releases/download/v0.4.0/age-plugin-yubikey-v0.4.0-x86_64-windows.zip"
+    $zip = "$f\age-plugin-yubikey.zip"
+    Invoke-WebRequest -Uri $url -OutFile $zip 
+    Expand-Archive -Path $zip -DestinationPath $f -Force
+    Get-ChildItem -Path $f -File -Include *.exe -Recurse | Move-Item -Destination $f -Force
+    Remove-Item $zip
+    Get-ChildItem -Path $f -Directory | Remove-Item -Recurse -Force
+
+    Get-ChildItem -Path $f -File -Include *.exe -Recurse | Get-FileHash | ForEach-Object { Write-Host "After:  $($_.Hash) $($_.Path | Get-ChildItem | Select-Object name)" }
+}
+
+
 function Test-AgeCapailities {
 
     # is aged installed
