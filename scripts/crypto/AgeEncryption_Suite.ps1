@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Encrypt files with age encryption with multiple keys defiend in $AgeEncryptionKeys
+    Encrypt a file
 
 .EXAMPLE
-    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-File -File $f | %{Decrypt-File -File $_ | Get-Content}      
+    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-File -File $f -Receipents age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p -AsciiArmor  
 #>
 function global:Encrypt-File {
     param(
@@ -13,13 +13,18 @@ function global:Encrypt-File {
             ValueFromPipeline = $true
         )]
         [System.IO.FileInfo] $File,
+        
         [Parameter(Mandatory = $false)]
         [System.IO.FileInfo] $Destination,
-        [Parameter(Mandatory = $true)]
+        
+        [Parameter(Mandatory = $false)]
         [String[]] $Receipents,
+        
+        [Parameter(Mandatory = $false)]
+        [System.IO.FileInfo] $ReceipentsFile,
+
         [Parameter(Mandatory = $false)]
         [Switch] $AsciiArmor = $false
-
     )
 
     Test-AgeCapailities
@@ -27,6 +32,18 @@ function global:Encrypt-File {
     if (-not (Test-Path $File)) {
         Write-Error "File not found at $File"
         return
+    }
+
+    if ($null -eq $Receipents -and $null -eq $ReceipentsFile ) {
+        Write-Error "Receipents or ReceipentsFile must be set"
+        return
+    }
+
+    if ($null -ne $ReceipentsFile){
+        if (-not (Test-Path $ReceipentsFile)) {
+            Write-Error "ReceipentsFile not found at $ReceipentsFile"
+            return
+        }
     }
 
     [string]$in = Resolve-Path $File
@@ -42,6 +59,9 @@ function global:Encrypt-File {
     $cmd = "age -e "
     foreach ($key in $Receipents) {
         $cmd += " -r $($key) "
+    }
+    if ($ReceipentsFile -ne $null) {
+        $cmd += " -R ""$($ReceipentsFile.FullName)"" "
     }
     if ($AsciiArmor) {
         $cmd += " -a  "
@@ -62,6 +82,13 @@ function global:Encrypt-File {
     }
 }
 
+<#
+.SYNOPSIS
+    Encrypt files with age encryption with multiple keys defiend in $AgeEncryptionKeys
+
+.EXAMPLE
+    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-FileWithMyKeys -File $f | %{Decrypt-File -File $_ | Get-Content}     
+#>
 function global:Encrypt-FileWithMyKeys {
     param(
         [Parameter(
@@ -76,7 +103,8 @@ function global:Encrypt-FileWithMyKeys {
         [Switch] $AsciiArmor = $false
     )
 
-    Encrypt-File -File $File -Destination $Destination -Receipents @($AgeEncryptionKeys.Values) -AsciiArmor:$AsciiArmor
+    $receipentsFile = Join-Path $env:USERPROFILE ".age\receipients_soft.txt"
+    Encrypt-File -File $File -Destination $Destination -ReceipentsFile $receipentsFile -AsciiArmor:$AsciiArmor
 }
 
 function global:Encrypt-FileWithMyHSMKeys {
@@ -100,16 +128,17 @@ function global:Encrypt-FileWithMyHSMKeys {
         Write-Error "AgePluginYubikey not set to your PATH"
     }
 
-    Encrypt-File -File $File -Destination $Destination -Receipents @($AgeEncryptionHSMKeys.Values) -AsciiArmor:$AsciiArmor
+    $receipentsFile = Join-Path $env:USERPROFILE ".age\receipients_hsm.txt"
+    Encrypt-File -File $File -Destination $Destination -ReceipentsFile $receipentsFile -AsciiArmor:$AsciiArmor
 }
 
 
 <#
 .SYNOPSIS
-    Decrypt files with age encryption with the private key filepath defiend in $AgeDecryptionKey
+    Decrypt files with age encryption with the private key filepath defiend in $AgeDecryptionKeyFilePath
 
 .EXAMPLE
-    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-File -File $f | %{Decrypt-File -File $_ | Get-Content}    
+    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-FileWithMyKeys -File $f | %{Decrypt-File -File $_ | Get-Content}  
 #>
 function global:Decrypt-File {
     param(
@@ -127,7 +156,7 @@ function global:Decrypt-File {
 
     $mainkeyFile = $fileList.AgeEncryptedMainKey
 
-    if (-not (Test-Path $AgeDecryptionKey)) {
+    if (-not (Test-Path $AgeDecryptionKeyFilePath)) {
         Write-Error "Main key file not found at $mainkeyFile"
         return
     }
@@ -139,7 +168,7 @@ function global:Decrypt-File {
         $out = $out + ("_{0:yyyy-MM-dd_HH-mm-ss-fff}.plain" -f (Get-Date))
     }
 
-    $cmd = "age -d -i $AgeDecryptionKey -o $out $in"
+    $cmd = "age -d -i $AgeDecryptionKeyFilePath -o $out $in"
     Invoke-Expression $cmd
 
     if ($LASTEXITCODE -ne 0) {
@@ -176,13 +205,19 @@ function Test-AgeCapailities {
         return
     }
 
-    if ($AgeEncryptionKeys -eq $null) {
-        Write-Error 'AgeEncryptionKeys not found, must be set your $PROFILE'
+    $file = (Join-Path $env:USERPROFILE ".age\receipients_soft.txt")
+    if (-not (Test-Path $file)) {
+        Write-Error "Receipents file not found, must be set your $file"
+        return
+    }
+    $file = (Join-Path $env:USERPROFILE ".age\receipients_hsm.txt")
+    if (-not (Test-Path $file)) {
+        Write-Error "Receipents file not found, must be set your $file"
         return
     }
 
-    if ($AgeDecryptionKey -eq $null) {
-        Write-Error 'AgeDecryptionKey not found, must be set your $PROFILE'
+    if ($null -eq $AgeDecryptionKeyFilePath -or (-not (Test-Path $AgeDecryptionKeyFilePath))) {
+        Write-Error 'AgeDecryptionKeyFilePath not found, must be set your $PROFILE'
         return
     }
 }
