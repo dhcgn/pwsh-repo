@@ -70,7 +70,7 @@ if ($GeneratedSharedProfileFromLocal -eq $true) {
     $localUserProfileRemote = Get-Content (Join-Path $PSScriptRoot "sharedprofile.ps1")
 }
 else {
-    $url = "https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/local.ps1"
+    $url = "https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/sharedprofile.ps1"
     $localUserProfileRemote = Invoke-WebRequest -Uri  $url -UseBasicParsing | ForEach-Object { $_.Content }
 }
 
