@@ -125,7 +125,7 @@ function global:Publish-File {
     $link
 }
 
-function global:Get-FileUnprotected {
+function global:Get-PublishedFiles{
     if (-not (Test-Rclone)) {
         return
     }
