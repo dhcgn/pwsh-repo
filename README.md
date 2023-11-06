@@ -11,6 +11,7 @@ This is my personal Powershell repo where a few scripts I often use.
 - Create a Powershell with elevalted rights without a password prompt
 - Read `Date-Taken` from media files
 - Transcribe audio and video files to text with OpenAI API
+- Encode images to and from JpegXL/JXL
 
 ## Installation
 
