@@ -106,3 +106,9 @@ function Save-SampleScript {
 Save-SampleScript -ScriptName "99_load_pwsh-repo.ps1.sample"
 Save-SampleScript -ScriptName "10_set-tools-to-alias.ps1.sample"
 Save-SampleScript -ScriptName "00_vars.ps1.sample"
+
+# Exit Message
+Write-Host "⚠ -----------------------------------------------------------------------"
+Write-Host "⚠ Go to $localProfileFolder and update the scripts to your needs!"
+Write-Host "⚠ This script can be re-run safely to update the local profile files."
+Write-Host "⚠ -----------------------------------------------------------------------"
