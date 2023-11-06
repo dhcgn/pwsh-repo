@@ -17,8 +17,9 @@ This is my personal Powershell repo where a few scripts I often use.
 
 1. Run `profile\init.ps1` this can be run repeatedly.
    1. This will add `shell.ps1` in each Powershell `$PROFILE` to run `Join-Path $env:USERPROFILE ".sharedScripting\sharedprofile.ps1"` so there is only one place to edit the profile.
-2. `sharedprofile.ps1` starts with every new Powershell session, `*.ps1` files next will be loaded executed in alphabetical order.
-   1. So you could have something link `00-vars.ps1` to set variables that are used in other scripts first.
+2. This repo should be cloned to `C:\dev\pwsh-repo` so it works out of the box.
+3. `sharedprofile.ps1` starts with every new Powershell session, `*.ps1` files next will be loaded executed in alphabetical order.
+   1. There are sample scripts `*.sample` which can be rennamed.
 
 ## Installation from web
 
