@@ -1,0 +1,1 @@
+$global:AgeDecryptionKeyFilePath = Join-Path $env:USERPROFILE ".age\primary.txt.age"

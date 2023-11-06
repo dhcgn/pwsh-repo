@@ -84,3 +84,25 @@ if ($versionRemote -ne $versionLocal) {
 else {
     Write-Host "Skipping $localProfileFile, already up to date with '$versionRemote'"
 }
+
+# Copy sample script to sharedScripting
+
+function Save-SampleScript {
+    param (
+        $ScriptName
+    )
+    $sampleScript = $null
+    if ($GeneratedSharedProfileFromLocal -eq $true) {
+        $sampleScript = Get-Content (Join-Path $PSScriptRoot "$ScriptName")
+    }
+    else {
+        $url = "https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/$ScriptName"
+        $sampleScript = Invoke-WebRequest -Uri  $url -UseBasicParsing | ForEach-Object { $_.Content }
+    }
+    $sampleScriptPath = Join-Path $localProfileFolder "$ScriptName"
+    Set-Content -Path $sampleScriptPath -Value $sampleScript
+}
+
+Save-SampleScript -ScriptName "99_load_pwsh-repo.ps1.sample"
+Save-SampleScript -ScriptName "10_set-tools-to-alias.ps1.sample"
+Save-SampleScript -ScriptName "00_vars.ps1.sample"

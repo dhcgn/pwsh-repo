@@ -1,0 +1,6 @@
+$loadScripte = "C:\*\pwsh-repo\scripts\load-pwsh-repo.ps1"
+if (Test-Path $loadScripte){
+    . $loadScripte
+}else{
+    Write-Host "pwsh-repo not found"
+}

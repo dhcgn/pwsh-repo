@@ -1,0 +1,8 @@
+$wsFolder = "C:\ws\"
+if (Test-Path $wsFolder){
+    Get-ChildItem $wsFolder -Recurse -Filter *.exe | ForEach-Object {
+        Set-Alias -Name $_.BaseName -Value $_.FullName -Scope Global
+    }
+}else{
+    Write-Host "folder $wsFolder not found"
+}
