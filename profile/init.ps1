@@ -12,7 +12,7 @@ if (-not (Test-Path $PROFILE)) {
     New-Item -Path $PROFILE -ItemType File
 }
 
-$profiles = Resolve-Path C:\Users\*\OneDrive\Documents\*\*_profile.ps1
+$profiles = Resolve-Path ("{0}\*PowerShell*\*_profile.ps1" -f [Environment]::GetFolderPath("MyDocuments"))
 
 $generatedSharedProfile = $null
 if ($GeneratedSharedProfileFromLocal -eq $true) {
@@ -53,7 +53,7 @@ foreach ($profile in $profiles) {
 
 # Set or update the local profile
 
-$localProfileFolder = Join-Path $env:USERPROFILE "Local\SharedScripting\"
+$localProfileFolder = Join-Path $env:USERPROFILE ".sharedScripting"
 if (-not (Test-Path $localProfileFolder)) {
     Write-Host "Creating $localProfileFolder"
     New-Item -Path $localProfileFolder -ItemType Directory
