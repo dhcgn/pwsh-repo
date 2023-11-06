@@ -108,7 +108,9 @@ Save-SampleScript -ScriptName "10_set-tools-to-alias.ps1.sample"
 Save-SampleScript -ScriptName "00_vars.ps1.sample"
 
 # Exit Message
-Write-Host "⚠ -----------------------------------------------------------------------"
-Write-Host "⚠ Go to $localProfileFolder and update the scripts to your needs!"
-Write-Host "⚠ This script can be re-run safely to update the local profile files."
-Write-Host "⚠ -----------------------------------------------------------------------"
+Write-Host -ForegroundColor Magenta "⚠ -----------------------------------------------------------------------" 
+Write-Host -ForegroundColor Magenta "⚠ Go to $localProfileFolder and update the scripts to your needs!"
+Write-Host -ForegroundColor Magenta "⚠ Rename the scripts from *.sample to *.ps1 to activate them."
+Write-Host -ForegroundColor Magenta "⚠ Run 'git clone https://github.com/dhcgn/pwsh-repo/ C:\dev\pwsh-repo\' to download pwsh-repo"
+Write-Host -ForegroundColor Magenta "⚠ This script can be re-run safely to update the local profile files."
+Write-Host -ForegroundColor Magenta "⚠ -----------------------------------------------------------------------"

@@ -2,6 +2,8 @@
 
 This is my personal Powershell repo where a few scripts I often use.
 
+:warning: No warranties in any kind :warning:
+
 ## Some Features
 
 - Encryption with age-encryption.org and with HSM support
@@ -16,6 +18,12 @@ This is my personal Powershell repo where a few scripts I often use.
    1. This will add `shell.ps1` in each Powershell `$PROFILE` to run `Join-Path $env:USERPROFILE ".sharedScripting\sharedprofile.ps1"` so there is only one place to edit the profile.
 2. `sharedprofile.ps1` starts with every new Powershell session, `*.ps1` files next will be loaded executed in alphabetical order.
    1. So you could have something link `00-vars.ps1` to set variables that are used in other scripts first.
+
+## Installation from web
+
+```powershell
+Invoke-WebRequest 'https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profile/init.ps1' | Invoke-Expression
+```
 
 ## Powershell Functions
 
