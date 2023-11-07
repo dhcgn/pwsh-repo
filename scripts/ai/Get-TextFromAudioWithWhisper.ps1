@@ -24,7 +24,7 @@
     Make sure to set your OpenAI token as an environment variable (OPENAITOKEN) before running the script.
 #>
 param (
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
     [System.IO.FileInfo]$File,
     [string]$prompt,
     [string]$language
