@@ -4,7 +4,7 @@
 #>
 
 param(
-    [string]
+    [string[]]
     $Text = "Benutze den Parameter Text um einen Text anzugeben.",
     [string]
     [ValidateSet("alloy", "echo", "fable", "onyx", "nova", "shimmer")]
@@ -32,8 +32,16 @@ $bodyTemplate = @"
     "voice": "alloy"
 }
 "@
+
+[string]$text = (($Text -join """", [System.Environment]::NewLine) -creplace '\P{IsBasicLatin}')
+
+# ensure input has at most 4096 characters
+if ($text.Length -gt 4096) {
+    $text = $text.Substring(0, 4096)
+}
+
 $customObject = ConvertFrom-Json $bodyTemplate
-$customObject.input = ($Text -creplace '\P{IsBasicLatin}')
+$customObject.input = $text 
 $customObject.voice = $Voice
 $body = $customObject | ConvertTo-Json
 $file =  ("{0}_speech.mp3" -f (Get-Date -Format "yyyy-MM-dd-HH_mm_ss"))

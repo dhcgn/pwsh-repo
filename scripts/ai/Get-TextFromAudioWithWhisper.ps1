@@ -60,4 +60,4 @@ if ($null -ne $language) {
     $body.Add("language", $language)
 }
 $r = Invoke-RestMethod -Uri $url -Method Post -Headers $headers -Form $body
-$r | Format-List
+$r.text
