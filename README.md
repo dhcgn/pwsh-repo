@@ -29,23 +29,29 @@ Invoke-WebRequest 'https://raw.githubusercontent.com/dhcgn/pwsh-repo/main/profil
 
 ## Powershell Functions
 
-- Publish-FileUnprotected
-- Publish-FilePasswortProtected
-- Publish-File
-- Test-Rclone
-- Encrypt-File
-- Encrypt-FileWithMyKeys
-- Encrypt-FileWithMyHSMKeys
-- Decrypt-File
-- New-Guid
-- audio-to-text
-- Get-RandomSecure
-- Set-ReSharperExclusion
-- Get-DateTaken
-- Load-Credential
-- Save-Credential
-- Start-PowerShellAs
-- sync-ssh-from-wndows-to-wsl
-- Set-PowerPointExportResolution
-- ws
-- load-pwsh-repo
+Publish-FileUnprotected
+Publish-FilePasswortProtected
+Publish-File
+Test-Rclone
+Encrypt-File
+Encrypt-FileWithMyKeys
+Encrypt-FileWithMyHSMKeys
+Decrypt-File
+ConvertTo-JpegXl
+ConvertTo-PngFromJpegXl
+New-Guid
+Get-SummarizeTextWithGPT
+Get-TextFromAudioWithWhisper
+Get-TTSWithOpenAI
+Get-RandomSecure
+Set-ReSharperExclusion
+Invoke-IpfsUpload
+Extract-AudioFromVideo
+Get-DateTaken
+Load-Credential
+Save-Credential
+Start-PowerShellAs
+sync-ssh-from-wndows-to-wsl
+Set-PowerPointExportResolution
+ws
+load-pwsh-repo
