@@ -8,7 +8,8 @@ A $env:PINATAAPIJWT must be present, this script will use these settings: {"cidV
 
 param(
     [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [System.IO.FileInfo]$File
+    [System.IO.FileInfo]$File,
+    [bool]$WrapWithDirectory = $true
 )
 
 # Get the token from environment variable
@@ -28,6 +29,10 @@ $form = @{
     pinataOptions = '{"cidVersion":1, "wrapWithDirectory": true}'
     pinataMetadata = '{"name":"not-set"}' | ConvertFrom-Json | %{$_.name = $File.Name; $_} | ConvertTo-Json
     file = Get-Item $File
+}
+
+if ($WrapWithDirectory -eq $false) {
+    $form.pinataOptions = '{"cidVersion":1, "wrapWithDirectory": false}'
 }
 
 $securetoken = ConvertTo-SecureString $token -AsPlainText -Force
