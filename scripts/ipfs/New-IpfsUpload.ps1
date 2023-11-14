@@ -52,13 +52,20 @@ Write-Host "Gateway URLs:"
 foreach($url in $urls) {
     Write-Host "$url$($ipfsResult.IpfsHash)"
 }
-Write-Host "https://$($ipfsResult.IpfsHash).ipfs.dweb.link/"
+Write-Host "https://$($ipfsResult.IpfsHash).ipfs.dweb.link"
 
 Write-Host ""
 Write-Host "ipfs commands:"
 Write-Host "ipfs ls $($ipfsResult.IpfsHash)"
 Write-Host "ipfs get $($ipfsResult.IpfsHash) -o $($File.Name)"
 
+if ((Get-Command ipfs -ErrorAction Ignore) -ne $null){
+    Write-Host ""
+    Write-Host "remote pinning:"
+    $cid = $ipfsResult.IpfsHash; ipfs pin remote service ls | %{$name= $_.Split(" ")[0]; "ipfs pin remote add $cid --service=$name"}
+    Write-Host "More: https://github.com/ipfs/pinning-services-api-spec#online-services"
+}
+
 Write-Host ""
-Write-Host "ipfs expert"
+Write-Host "ipfs expert:"
 Write-Host "https://cid.ipfs.tech/#$($ipfsResult.IpfsHash)"
