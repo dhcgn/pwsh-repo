@@ -4,8 +4,6 @@
 Download syncthing from github and install it as scheduled task to start on startup.
 
 .NOTES
-TODO: Download always the latest release from github
-
 Source https://github.com/syncthing/syncthing/releases/download/v1.26.1/syncthing-windows-amd64-v1.26.1.zip
 #>
 
@@ -32,7 +30,14 @@ if (-not $SkipDownload) {
     }
 
     Write-Host "Download syncthing"
-    $url = 'https://github.com/syncthing/syncthing/releases/download/v1.26.1/syncthing-windows-amd64-v1.26.1.zip'
+
+    # Get latest release
+    $j = Invoke-RestMethod -Uri https://api.github.com/repos/syncthing/syncthing/releases/latest
+    $url = $j.assets | ?{$_.name -like "syncthing-windows-amd64-v*.zip"} | %{$_.browser_download_url}
+    $assetname = $j.assets | ?{$_.name -like "syncthing-windows-amd64-v*.zip"} | %{$_.name}
+    Write-Host "Download $assetname"
+
+    # Download latest release
     $zipFile = Join-Path $targetFolder 'syncthing.zip'
     Invoke-WebRequest -Uri $url -OutFile $zipFile
 
