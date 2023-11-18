@@ -226,5 +226,3 @@ $f = "C:\ProgramData\AgePluginYubikey"
 if (Test-Path $f) {
     $env:Path += ";$f"
 }
-
-Test-AgeCapailities
