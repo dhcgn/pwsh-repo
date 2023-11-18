@@ -142,7 +142,7 @@ syncthing [serve]
           [--verbose] [--version] [--help] [--debug-*]
 #>
 
-$taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $startScript -WorkingDirectory $targetFolder
+$taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden $startScript" -WorkingDirectory $targetFolder
 $taskTrigger = New-ScheduledTaskTrigger -AtStartup
 $st = Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Description "Start syncthing on startup" -ErrorAction SilentlyContinue -ErrorVariable err
 if ($err) {
