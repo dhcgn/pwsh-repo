@@ -40,7 +40,19 @@ if (-not $SkipDownload) {
     $tempUnzipFolder = Join-Path $targetFolder 'temp'
     Expand-Archive -Path $zipFile -DestinationPath $tempUnzipFolder -Force
     Remove-Item -Path $zipFile -Force
-    Get-ChildItem -Path $tempUnzipFolder -Recurse -Include 'syncthing.exe' | Move-Item  -Destination $targetFile -Force
+
+    # Kill running processes
+    Write-Host "Kill running syncthing processes"
+    Get-Process -Name syncthing -ErrorAction Ignore | Stop-Process -Force -Verbose
+
+    # Replace syncthing.exe
+    Write-Host "Replace syncthing.exe"
+    if (Test-Path $targetFile) {
+        Start-Sleep -Seconds 1
+        Remove-Item -Path $targetFile -Force
+    }
+
+    Get-ChildItem -Path $tempUnzipFolder -Recurse -Include 'syncthing.exe' | Move-Item -Destination $targetFile -Force
     Remove-Item -Path $tempUnzipFolder -Force -Recurse
 
     Write-Host "Update syncthing"
@@ -55,13 +67,8 @@ if (-not $SkipDownload) {
     }
 }
 
-# Setup a ScheduledTask to start syncthing on startup
-Write-Host "Setup scheduled task to start syncthing on startup"
-
-if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "This script must be run as an Administrator to create or modify a scheduled task. Please re-run this script as an Administrator."
-    return
-}
+# Place startup script
+Write-Host "Place startup script"
 
 $taskName = 'syncthing-pwsh'
 
@@ -79,7 +86,7 @@ if (-NOT (Test-Path $exe)) {
 }
 
 Write-Host "Stop syncthing processes"
-Get-Process -Name syncthing | Stop-Process -Force 
+Get-Process -Name syncthing -ErrorAction Ignore | Stop-Process -Force -Verbose
 
 Write-Host "Start syncthing process"
 Start-Process -FilePath $exe  -WindowStyle Hidden -ArgumentList '--no-console', '--no-browser', "--logfile=$logFile"
@@ -87,6 +94,34 @@ Start-Process -FilePath $exe  -WindowStyle Hidden -ArgumentList '--no-console', 
 
 $startScript = Join-Path $targetFolder 'hidden_start.ps1'
 Set-Content -Path $startScript -Value $startScriptContent
+
+# Check if script is running as administrator
+
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host "This script must be run as an Administrator to create or modify a scheduled task. Please re-run this script as an Administrator."
+    Write-Host "Starting syncthing without scheduled task."
+    . $startScript
+
+    # TODO refactor to function, duplicated code!
+    # Waiting for syncthing to start
+    Write-Host "Waiting for syncthing to start"
+    Start-Sleep -Seconds 1 
+
+    # Print logging full path
+    $logFile = Join-Path $targetFolder 'syncthing.log'
+    Write-Host "Syncthing log file: $logFile"
+
+    $guiUrls = Select-String -Path $logFile -Pattern "Access the GUI via the following URL: (.*)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Unique
+    $guiUrlsAggregated = $guiUrls -join ", "
+
+    Write-Host "Syncthing GUI Urls: $guiUrlsAggregated "
+    return
+}
+
+# Setup a ScheduledTask to start syncthing on startup
+Write-Host "Setup scheduled task to start syncthing on startup"
+
+
 
 if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
     Write-Host "Remove scheduled task $taskName"
@@ -120,17 +155,18 @@ if ($err) {
 # $st.Triggers | Format-List
 # $st.Actions | Format-List
 
+# TODO refactor to function, duplicated code!
+. $startScript
+
+# Waiting for syncthing to start
+Write-Host "Waiting for syncthing to start"
+Start-Sleep -Seconds 1 
+
 # Print logging full path
 $logFile = Join-Path $targetFolder 'syncthing.log'
 Write-Host "Syncthing log file: $logFile"
 
 $guiUrls = Select-String -Path $logFile -Pattern "Access the GUI via the following URL: (.*)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Unique
 $guiUrlsAggregated = $guiUrls -join ", "
-
-. $startScript
-
-# Waiting for syncthing to start
-Write-Host "Waiting for syncthing to start"
-Start-Sleep -Seconds 1 
 
 Write-Host "Syncthing GUI Urls: $guiUrlsAggregated "
