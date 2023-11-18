@@ -1,7 +1,7 @@
 
 <#
 .DESCRIPTION
-Download syncthing from github and install it as windows service
+Download syncthing from github and install it as scheduled task to start on startup.
 
 .NOTES
 TODO: Download always the latest release from github
