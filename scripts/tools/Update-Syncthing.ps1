@@ -47,9 +47,18 @@ if (-not $SkipDownload) {
 
     # Replace syncthing.exe
     Write-Host "Replace syncthing.exe"
+    if (Test-Path "$targetFile.delete") {
+        Write-Host "Remove $targetFile.delete which was created by a previous update"
+        Remove-Item -Path "$targetFile.delete" -Force
+    }
+
     if (Test-Path $targetFile) {
         Start-Sleep -Seconds 1
-        Remove-Item -Path $targetFile -Force
+        Remove-Item -Path $targetFile -Force -ErrorVariable err
+        if ($err) {
+            Write-Host "Error removing $targetFile, renmaing to $targetFile.delete. Will be deleted on next update."
+            Move-Item -Path $targetFile -Destination "$targetFile.delete" -Force
+        }
     }
 
     Get-ChildItem -Path $tempUnzipFolder -Recurse -Include 'syncthing.exe' | Move-Item -Destination $targetFile -Force
