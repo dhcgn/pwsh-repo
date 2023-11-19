@@ -16,30 +16,28 @@
     PS C:\> Get-DateTaken -file $file
     This command retrieves the date when the file represented by the $file variable was taken or created.
 #>
-function Get-DateTaken {
-    [OutputType([datetime])]
-    param (
-        [Parameter(Mandatory = $true)]
-        [System.IO.FileInfo]
-        $file
-    )
+[OutputType([datetime])]
+param (
+    [Parameter(Mandatory = $true)]
+    [System.IO.FileInfo]
+    $file
+)
 
-    # $DateFormat = 'dd.MM.yyyy HH:mm'
-    $DateTakenWinApi = 12
-    $DateCreatedWinApi = 4
+# $DateFormat = 'dd.MM.yyyy HH:mm'
+$DateTakenWinApi = 12
+$DateCreatedWinApi = 4
 
-    if ($null -eq $Shell) {
-        $Shell = New-Object -ComObject shell.application
-    }
- 
-    $dir = $Shell.Namespace($_.DirectoryName)
-    $DateTakenString = $dir.GetDetailsOf($dir.ParseName($_.Name), $DateTakenWinApi)
-    if ($DateTakenString -eq '') {
-        $DateTakenString = $dir.GetDetailsOf($dir.ParseName($_.Name), $DateCreatedWinApi)
-    }
-    # sanitze string
-    $DateTakenString = $DateTakenString -replace '[^0-9\.\:\ \/]', ''
-    # parse to DateTime
-    $DateTaken = Get-Date $DateTakenString # -Format $DateFormat
-    $DateTaken
+if ($null -eq $Shell) {
+    $Shell = New-Object -ComObject shell.application
 }
+ 
+$dir = $Shell.Namespace($_.DirectoryName)
+$DateTakenString = $dir.GetDetailsOf($dir.ParseName($_.Name), $DateTakenWinApi)
+if ($DateTakenString -eq '') {
+    $DateTakenString = $dir.GetDetailsOf($dir.ParseName($_.Name), $DateCreatedWinApi)
+}
+# sanitze string
+$DateTakenString = $DateTakenString -replace '[^0-9\.\:\ \/]', ''
+# parse to DateTime
+$DateTaken = Get-Date $DateTakenString # -Format $DateFormat
+$DateTaken
