@@ -46,12 +46,15 @@ Get-TTSWithOpenAI
 Get-RandomSecure
 Set-ReSharperExclusion
 Invoke-IpfsUpload
+Invoke-RemotePinning
 Extract-AudioFromVideo
 Get-DateTaken
+Move-MediaToDateFolder
 Load-Credential
 Save-Credential
 Start-PowerShellAs
 sync-ssh-from-wndows-to-wsl
 Set-PowerPointExportResolution
+Update-Syncthing
 ws
 load-pwsh-repo
