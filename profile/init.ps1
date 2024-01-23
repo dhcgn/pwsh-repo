@@ -103,7 +103,8 @@ function Save-SampleScript {
     Set-Content -Path $sampleScriptPath -Value $sampleScript
 }
 
-Save-SampleScript -ScriptName "99_load_pwsh-repo.ps1.sample"
+Save-SampleScript -ScriptName "99_last.ps1.sample"
+Save-SampleScript -ScriptName "50_load_pwsh-repo.ps1.sample"
 Save-SampleScript -ScriptName "10_set-tools-to-alias.ps1.sample"
 Save-SampleScript -ScriptName "00_vars.ps1.sample"
 
