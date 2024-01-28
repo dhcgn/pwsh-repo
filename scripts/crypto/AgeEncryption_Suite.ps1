@@ -12,7 +12,9 @@ function global:Encrypt-File {
             Mandatory = $true,
             ValueFromPipeline = $true
         )]
-        [System.IO.FileInfo] $File,
+        [System.IO.FileInfo] 
+        [ValidateScript({Test-Path $_}, ErrorMessage = "File '{0}' not found")]
+        $File,
         
         [Parameter(Mandatory = $false)]
         [System.IO.FileInfo] $Destination,
@@ -71,6 +73,7 @@ function global:Encrypt-File {
     }
     $cmd += " $in "
     
+    Write-Host $cmd -ForegroundColor Cyan
     Invoke-Expression $cmd
 
     if ($LASTEXITCODE -ne 0) {
@@ -96,7 +99,9 @@ function global:Encrypt-FileWithMyKeys {
             Mandatory = $true,
             ValueFromPipeline = $true
         )]
-        [System.IO.FileInfo] $File,
+        [System.IO.FileInfo] 
+        [ValidateScript({Test-Path $_}, ErrorMessage = "File '{0}' not found")]
+        $File,
         [Parameter(Mandatory = $false)]
         [System.IO.FileInfo] $Destination,
         [Parameter(Mandatory = $false)]
@@ -114,7 +119,9 @@ function global:Encrypt-FileWithMyHSMKeys {
             Mandatory = $true,
             ValueFromPipeline = $true
         )]
-        [System.IO.FileInfo] $File,
+        [System.IO.FileInfo] 
+        [ValidateScript({Test-Path $_}, ErrorMessage = "File '{0}' not found")]
+        $File,
         [Parameter(Mandatory = $false)]
         [System.IO.FileInfo] $Destination,
         [Parameter(Mandatory = $false)]
@@ -132,6 +139,61 @@ function global:Encrypt-FileWithMyHSMKeys {
     Encrypt-File -File $File -Destination $Destination -ReceipentsFile $receipentsFile -AsciiArmor:$AsciiArmor
 }
 
+<#
+.SYNOPSIS
+    Decrypt files with age encryption with the private key filepath defiend in $AgeDecryptionKeyFilePath
+
+.EXAMPLE
+    $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-FileWithMyKeys -File $f | %{Decrypt-File -File $_ | Get-Content}  
+#>
+function global:Decrypt-FileWithHSMKeys {
+    param(
+        [Parameter(
+            Position = 0,
+            Mandatory = $true,
+            ValueFromPipeline = $true
+        )]
+
+        [System.IO.FileInfo] 
+        [ValidateScript({Test-Path $_}, ErrorMessage = "File '{0}' not found")]
+        $File,
+        [Parameter(Mandatory = $false)]
+        [string] $Destination
+    )
+
+    Test-AgeCapailities
+
+    if (-Not(Test-Path "C:\ProgramData\AgePluginYubikey")) {
+        Write-Error "AgePluginYubikey not installed, install with Install-AgePluginYubikey and set it to your PATH"
+    }
+    if ($env:Path -notlike "*C:\ProgramData\AgePluginYubikey*") {
+        Write-Error "AgePluginYubikey not set to your PATH"
+    }
+
+    $receipentsFile = Join-Path $env:USERPROFILE ".age\identites_hsm.txt"
+
+    if (-not (Test-Path $receipentsFile)) {
+        Write-Error "HSM identiy file not found at $receipentsFile"
+        return
+    }
+
+    # TODO: restore of filename if ending with .age
+    [string]$in = Resolve-Path $File
+    $out = $in + ".plain"
+    if (Test-Path $out) {
+        $out = $out + ("_{0:yyyy-MM-dd_HH-mm-ss-fff}.plain" -f (Get-Date))
+    }
+
+    $cmd = "age -d -i $receipentsFile -o $out $in"
+    Write-Host $cmd -ForegroundColor Cyan
+    Invoke-Expression $cmd
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to decrypt file"
+        return
+    }
+    Get-ChildItem $out
+}
 
 <#
 .SYNOPSIS
@@ -147,17 +209,17 @@ function global:Decrypt-File {
             Mandatory = $true,
             ValueFromPipeline = $true
         )]
-        [System.IO.FileInfo] $File,
+        [System.IO.FileInfo] 
+        [ValidateScript({Test-Path $_}, ErrorMessage = "File '{0}' not found")]
+        $File,
         [Parameter(Mandatory = $false)]
         [string] $Destination
     )
 
     Test-AgeCapailities
 
-    $mainkeyFile = $fileList.AgeEncryptedMainKey
-
     if (-not (Test-Path $AgeDecryptionKeyFilePath)) {
-        Write-Error "Main key file not found at $mainkeyFile"
+        Write-Error "Main key file not found at $AgeDecryptionKeyFilePath"
         return
     }
 
