@@ -69,7 +69,7 @@ function global:Encrypt-File {
         $cmd += " -a  "
     }
     else {
-        $cmd += " -o $out  "
+        $cmd += " -o ""$out""  "
     }
     $cmd += " $in "
     
@@ -153,12 +153,13 @@ function global:Decrypt-FileWithHSMKeys {
             Mandatory = $true,
             ValueFromPipeline = $true
         )]
-
         [System.IO.FileInfo] 
         [ValidateScript({Test-Path $_}, ErrorMessage = "File '{0}' not found")]
         $File,
         [Parameter(Mandatory = $false)]
-        [string] $Destination
+        [string] $Destination,
+        [Parameter(Mandatory = $false)]
+        [switch] $PrintDecryptedContent
     )
 
     Test-AgeCapailities
@@ -184,15 +185,23 @@ function global:Decrypt-FileWithHSMKeys {
         $out = $out + ("_{0:yyyy-MM-dd_HH-mm-ss-fff}.plain" -f (Get-Date))
     }
 
-    $cmd = "age -d -i $receipentsFile -o $out $in"
+    $cmd = "age -d -i ""$receipentsFile"" "
+    if (-not $PrintDecryptedContent) {
+        $cmd += " -o ""$out"" "
+    }
+    $cmd += " ""$in"""
+
     Write-Host $cmd -ForegroundColor Cyan
+    Write-Host "!!! PRESS YUBIKEY BUTTON AFTER PIN !!!" -ForegroundColor Yellow
     Invoke-Expression $cmd
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to decrypt file"
         return
     }
-    Get-ChildItem $out
+    if (-not $PrintDecryptedContent) {
+        Get-ChildItem $out
+    }    
 }
 
 <#
@@ -213,7 +222,9 @@ function global:Decrypt-File {
         [ValidateScript({Test-Path $_}, ErrorMessage = "File '{0}' not found")]
         $File,
         [Parameter(Mandatory = $false)]
-        [string] $Destination
+        [string] $Destination,
+        [Parameter(Mandatory = $false)]
+        [switch] $PrintDecryptedContent
     )
 
     Test-AgeCapailities
@@ -230,14 +241,21 @@ function global:Decrypt-File {
         $out = $out + ("_{0:yyyy-MM-dd_HH-mm-ss-fff}.plain" -f (Get-Date))
     }
 
-    $cmd = "age -d -i $AgeDecryptionKeyFilePath -o $out $in"
+    $cmd = "age -d -i ""$AgeDecryptionKeyFilePath"" "
+    if (-not $PrintDecryptedContent) {
+        $cmd += " -o ""$out"" "
+    }
+    $cmd += " ""$in"""
+
     Invoke-Expression $cmd
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to decrypt file"
         return
     }
-    Get-ChildItem $out
+    if (-not $PrintDecryptedContent) {
+        Get-ChildItem $out
+    }  
 }
 
 function Install-AgePluginYubikey {
