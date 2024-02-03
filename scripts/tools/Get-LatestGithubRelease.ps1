@@ -1,6 +1,23 @@
 <#
+.SYNOPSIS
+    This script fetches the latest release of a specified GitHub repository and downloads a specified asset from it.
+
+.DESCRIPTION
+    The Get-LatestGithubRelease.ps1 script fetches the latest release of a specified GitHub repository using the GitHub API. It then downloads a specified asset from the release to a specified download folder. The asset to be downloaded is specified using a filter string.
+
+.PARAMETER DownloadFolder
+    The path to the folder where the downloaded asset should be saved. This parameter is mandatory.
+
+.PARAMETER AssetFilter
+    A filter string to specify which asset to download from the release. This parameter is mandatory.
+
+.PARAMETER Repository
+    The GitHub repository from which to fetch the latest release. This parameter is mandatory.
+
 .EXAMPLE
-Get-LatestGithubRelease -DownloadFolder C:\temp -AssetFilter restic_*_windows_amd64.zip -Repository restic/restic
+    Get-LatestGithubRelease -DownloadFolder C:\temp -AssetFilter restic_*_windows_amd64.zip -Repository restic/restic
+
+    This will fetch the latest release from the restic/restic repository and download the asset that matches the filter string "restic_*_windows_amd64.zip" to the folder "C:\temp".
 #>
 param(
     [Parameter(Mandatory = $true)]
