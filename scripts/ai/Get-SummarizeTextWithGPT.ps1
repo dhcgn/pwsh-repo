@@ -12,8 +12,8 @@ param(
   [string]
   $Language = "english",
   [string]
-  [ValidateSet("gpt-4-1106-preview", "gpt-4", "gpt-3.5-turbo-1106")]
-  $Model = "gpt-4-1106-preview",
+  [ValidateSet("gpt-4-0125-preview", "gpt-4", "gpt-3.5-turbo-1106")]
+  $Model = "gpt-4-0125-preview",
   [switch]
   $ShowInBrowser
 )
