@@ -1,6 +1,33 @@
 <#
+.SYNOPSIS
+    This script summarizes text using the OpenAI API.
+
 .DESCRIPTION
-Summarize text using the OpenAI API
+    The Get-SummarizeTextWithGPT.ps1 script uses the OpenAI API to summarize text. The text can be provided as a string array or as a file. The language of the text and the model to use for summarization can be specified. The maximum number of characters to read from the text can also be specified. The summarized text can be displayed in the console or in a web browser.
+
+.PARAMETER Text
+    The text to summarize. This parameter can accept multiple strings.
+
+.PARAMETER File
+    The file containing the text to summarize. The file must exist.
+
+.PARAMETER Language
+    The language of the text. The default language is English.
+
+.PARAMETER Model
+    The model to use for summarization. The default model is "gpt-4-0125-preview". Other options are "gpt-4" and "gpt-3.5-turbo".
+
+.PARAMETER MaxChars
+    The maximum number of characters to read from the text. The default is 10240 characters.
+
+.PARAMETER ShowInBrowser
+    If this switch is present, the summarized text will be displayed in a web browser.
+
+.EXAMPLE
+    Get-SummarizeTextWithGPT -Text "This is a long text that needs to be summarized." -Model "gpt-4"
+
+    This will summarize the text "This is a long text that needs to be summarized." using the "gpt-4" model.
+
 #>
 
 param(
@@ -14,6 +41,8 @@ param(
   [string]
   [ValidateSet("gpt-4-0125-preview", "gpt-4", "gpt-3.5-turbo")]
   $Model = "gpt-4-0125-preview",
+  [int]
+  $MaxChars = 1024*10,
   [switch]
   $ShowInBrowser
 )
@@ -40,9 +69,18 @@ if ($null -ne $Text) {
   $content = $Text -join """", [System.Environment]::NewLine
 }
 else {
-  $content = (Get-Content -Path $File -Encoding utf8) -join """", [System.Environment]::NewLine
+  $content = (Get-Content -Path $File -Encoding utf8 -TotalCount $MaxChars) -join """", [System.Environment]::NewLine
 }
 $content = $content -creplace '\P{IsBasicLatin}'
+
+
+# reduce content to max $MaxChars
+$contentIsReduced = $false
+if ($content.Length -gt $MaxChars) {
+  $contentIsReduced = $true
+  $contentLength = $content.Length
+  $content = $content.Substring(0, $MaxChars)
+}
 
 $url = "https://api.openai.com/v1/chat/completions"
 $headers = @{ "Authorization" = "Bearer $token"; "Content-Type" = "application/json" }
@@ -80,6 +118,11 @@ If the text is related to software development or IT topics, also:
 The summary and feedback should be provided in $Language.
 
 "@
+
+if($contentIsReduced) {
+  $prompt +=  "The text was reduced from $contentLength to $MaxChars characters." + [System.Environment]::NewLine
+}
+
 $customObject.messages[0].content = $prompt + [System.Environment]::NewLine
 if ($null -ne $File) {
   $customObject.messages[0].content += "The file name is: $($File.Name)" + [System.Environment]::NewLine
