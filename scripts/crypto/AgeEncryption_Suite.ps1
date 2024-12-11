@@ -71,7 +71,7 @@ function global:Encrypt-File {
     else {
         $cmd += " -o ""$out""  "
     }
-    $cmd += " $in "
+    $cmd += " ""$in"" "
     
     Write-Host $cmd -ForegroundColor Cyan
     Invoke-Expression $cmd
@@ -158,8 +158,7 @@ function global:Decrypt-FileWithHSMKeys {
         $File,
         [Parameter(Mandatory = $false)]
         [string] $Destination,
-        [Parameter(Mandatory = $false)]
-        [switch] $PrintDecryptedContent
+        [switch]$PrintToConsole
     )
 
     Test-AgeCapailities
@@ -185,23 +184,7 @@ function global:Decrypt-FileWithHSMKeys {
         $out = $out + ("_{0:yyyy-MM-dd_HH-mm-ss-fff}.plain" -f (Get-Date))
     }
 
-    $cmd = "age -d -i ""$receipentsFile"" "
-    if (-not $PrintDecryptedContent) {
-        $cmd += " -o ""$out"" "
-    }
-    $cmd += " ""$in"""
-
-    Write-Host $cmd -ForegroundColor Cyan
-    Write-Host "!!! PRESS YUBIKEY BUTTON AFTER PIN !!!" -ForegroundColor Yellow
-    Invoke-Expression $cmd
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to decrypt file"
-        return
-    }
-    if (-not $PrintDecryptedContent) {
-        Get-ChildItem $out
-    }    
+    Decrypt-FileWithMyKeys -File $in -Destination $out -IdentityFile $receipentsFile -PrintToConsole:$PrintToConsole
 }
 
 <#
@@ -211,7 +194,7 @@ function global:Decrypt-FileWithHSMKeys {
 .EXAMPLE
     $f = New-TemporaryFile; Set-Content $f "Hello World"; Encrypt-FileWithMyKeys -File $f | %{Decrypt-File -File $_ | Get-Content}  
 #>
-function global:Decrypt-File {
+function global:Decrypt-FileWithMyKeys {
     param(
         [Parameter(
             Position = 0,
@@ -223,14 +206,21 @@ function global:Decrypt-File {
         $File,
         [Parameter(Mandatory = $false)]
         [string] $Destination,
-        [Parameter(Mandatory = $false)]
-        [switch] $PrintDecryptedContent
+        [System.IO.FileInfo]$IdentityFile,
+        [switch]$PrintToConsole
     )
 
     Test-AgeCapailities
 
-    if (-not (Test-Path $AgeDecryptionKeyFilePath)) {
-        Write-Error "Main key file not found at $AgeDecryptionKeyFilePath"
+    
+    if ($null -eq $IdentityFile){
+        $identityFile = $AgeDecryptionKeyFilePath
+    }else{
+        $identityFile = $IdentityFile.FullName
+    }
+
+    if (-not (Test-Path $identityFile)) {
+        Write-Error "Main key file not found at $identityFile"
         return
     }
 
@@ -241,21 +231,20 @@ function global:Decrypt-File {
         $out = $out + ("_{0:yyyy-MM-dd_HH-mm-ss-fff}.plain" -f (Get-Date))
     }
 
-    $cmd = "age -d -i ""$AgeDecryptionKeyFilePath"" "
-    if (-not $PrintDecryptedContent) {
+    $cmd = "age -d -i $identityFile "
+    if ($false -eq $PrintToConsole){
         $cmd += " -o ""$out"" "
     }
-    $cmd += " ""$in"""
-
+    $cmd += " ""$in"" "
     Invoke-Expression $cmd
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to decrypt file"
         return
     }
-    if (-not $PrintDecryptedContent) {
+    if ($false -eq $PrintToConsole){
         Get-ChildItem $out
-    }  
+    }
 }
 
 function Install-AgePluginYubikey {
