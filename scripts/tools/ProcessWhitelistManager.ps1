@@ -56,6 +56,11 @@ function Stop-NonWhitelistedProcesses {
     .NOTES
         The actual Stop-Process command is commented out by default for safety.
     #>
+
+    # Display a warning message if the user is not running as an administrator
+    if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        Write-Warning "This script requires administrative privileges to stop some processes. Good luck!"
+    }
     
     if ($Url) {
         try {
@@ -99,5 +104,5 @@ function Stop-NonWhitelistedProcesses {
 
     # Ask user for confirmation
     # [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
-    $processesToStop | Stop-Process -Confirm
+    $processesToStop | Stop-Process -Confirm -Force
 }
