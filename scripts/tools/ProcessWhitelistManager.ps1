@@ -37,21 +37,50 @@ function Save-CurrentProcessesToWhitelist {
 }
 
 function Stop-NonWhitelistedProcesses {
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [string]$Url
+    )
     <#
     .SYNOPSIS
         Stops processes that are not in the whitelist.
     
     .DESCRIPTION
-        Reads the whitelist from the JSON file and compares it with currently
+        Reads the whitelist from either a URL or local JSON file and compares it with currently
         running processes. Attempts to stop any process not found in the whitelist.
+    
+    .PARAMETER Url
+        Optional URL to download the whitelist from. If not provided, uses local whitelist.json.
     
     .NOTES
         The actual Stop-Process command is commented out by default for safety.
     #>
     
-    # Load the whitelist from the JSON file
-    $whitelistPath = Join-Path $env:HOMEDRIVE $env:HOMEPATH "whitelist.json"
-    $whitelist = Get-Content -Path $whitelistPath | ConvertFrom-Json
+    if ($Url) {
+        try {
+            $whitelist = Invoke-RestMethod -Uri $Url -ErrorAction Stop
+        }
+        catch {
+            Write-Error "Failed to download whitelist from URL: $Url. Error: $_"
+            return
+        }
+    }
+    else {
+        # Load the whitelist from the JSON file
+        $whitelistPath = Join-Path $env:HOMEDRIVE $env:HOMEPATH "whitelist.json"
+        if (-not (Test-Path -Path $whitelistPath)) {
+            Write-Error "Whitelist file '$whitelistPath' not found. Please create a whitelist first."
+            return
+        }
+        $whitelist = Get-Content -Path $whitelistPath | ConvertFrom-Json
+    }
+    
+    # if list is null or has no elements 
+    if ($whitelist -eq $null -or $whitelist.Count -eq 0) {
+        Write-Error "Whitelist is empty. Please create a whitelist first."
+        return
+    }
     
     # Get current processes
     $processes = Get-Process | Select-Object Name -Unique
@@ -60,6 +89,7 @@ function Stop-NonWhitelistedProcesses {
     $processes | ForEach-Object {
         if ($whitelist.Name -notcontains $_.Name) {
             Stop-Process -Name $_.Name -Confirm
+            # Write-Host "Stopping process: $($_.Name)"
         }
     }
 }
