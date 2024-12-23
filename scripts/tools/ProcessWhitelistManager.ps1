@@ -58,7 +58,7 @@ function Stop-NonWhitelistedProcesses {
     #>
 
     # Display a warning message if the user is not running as an administrator
-    if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    if (-not [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")) {
         Write-Warning "This script requires administrative privileges to stop some processes. Good luck!"
     }
     
