@@ -16,28 +16,51 @@
     PS C:\> Get-DateTaken -file $file
     This command retrieves the date when the file represented by the $file variable was taken or created.
 #>
-[OutputType([datetime])]
-param (
-    [Parameter(Mandatory = $true)]
-    [System.IO.FileInfo]
-    $file
-)
+function Get-DateTaken {
+    [OutputType([datetime])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.IO.FileInfo]
+        $file
+    )
 
-# $DateFormat = 'dd.MM.yyyy HH:mm'
-$DateTakenWinApi = 12
-$DateCreatedWinApi = 4
+    # $DateFormat = 'dd.MM.yyyy HH:mm'
+    $DateTakenWinApi = 12
+    $DateCreatedWinApi = 4
 
-if ($null -eq $Shell) {
-    $Shell = New-Object -ComObject shell.application
-}
+    if ($null -eq $Shell) {
+        $Shell = New-Object -ComObject shell.application
+    }
  
-$dir = $Shell.Namespace($_.DirectoryName)
-$DateTakenString = $dir.GetDetailsOf($dir.ParseName($_.Name), $DateTakenWinApi)
-if ($DateTakenString -eq '') {
-    $DateTakenString = $dir.GetDetailsOf($dir.ParseName($_.Name), $DateCreatedWinApi)
+    try {
+        $dir = $Shell.Namespace($file.DirectoryName)
+        if ($null -eq $dir) {
+            throw "Unable to access directory"
+        }
+
+        $fileObj = $dir.ParseName($file.Name)
+        if ($null -eq $fileObj) {
+            throw "Unable to parse file"
+        }
+
+        $DateTakenString = $dir.GetDetailsOf($fileObj, $DateTakenWinApi)
+        if ([string]::IsNullOrWhiteSpace($DateTakenString)) {
+            $DateTakenString = $dir.GetDetailsOf($fileObj, $DateCreatedWinApi)
+        }
+
+        if ([string]::IsNullOrWhiteSpace($DateTakenString)) {
+            throw "No date information available"
+        }
+
+        # sanitize string
+        $DateTakenString = $DateTakenString -replace '[^0-9\.\:\ \/]', ''
+        
+        # parse to DateTime
+        $DateTaken = [datetime]::Parse($DateTakenString)
+        return $DateTaken
+    }
+    catch { 
+        Write-Error "Failed to get date taken: $_"
+        return $null
+    }
 }
-# sanitze string
-$DateTakenString = $DateTakenString -replace '[^0-9\.\:\ \/]', ''
-# parse to DateTime
-$DateTaken = Get-Date $DateTakenString # -Format $DateFormat
-$DateTaken
