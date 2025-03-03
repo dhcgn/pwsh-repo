@@ -8,6 +8,10 @@ if (-not (Test-Path $sharedprofile)) {
     Write-Host "Could not find local profile at $sharedprofile" -ForegroundColor Red
     return
 }
-. $sharedprofile
+
+Set-Alias -Name lsp -Value $sharedprofile
+Write-Host "📄 init shared profile: " -ForegroundColor Gray -NoNewline
+Write-Host "isp" -ForegroundColor Magenta -NoNewline
+Write-Host " (for performance defered)" -ForegroundColor Gray
 
 #END generated personal profile
