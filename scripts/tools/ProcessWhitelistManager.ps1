@@ -88,7 +88,7 @@ function Stop-NonWhitelistedProcesses {
     }
     
     # Get current processes
-    $processes = Get-Process | Select-Object Name -Unique
+    $processes = Get-Process
     
     # Compare current processes against whitelist and stop non-whitelisted ones
     $processesToStop = $processes | Where-Object { $whitelist.Name -notcontains $_.Name }
@@ -99,10 +99,16 @@ function Stop-NonWhitelistedProcesses {
     }
 
     # Display the processes to stop
-    $processNames = $processesToStop.Name -join ', '
-    Write-Host "Stopping $($processesToStop.Count) process(es): $processNames"
+    $uniqueProcessNames = ($processesToStop.Name | Select-Object -Unique) -join ', '
+    Write-Host "Stopping $($processesToStop.Count) process(es): $uniqueProcessNames"
 
-    # Ask user for confirmation
-    # [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
-    $processesToStop | Stop-Process -Confirm -Force
+    # Stop each process individually, skipping any that cannot be stopped
+    foreach ($p in $processesToStop) {
+        try {
+            Stop-Process -Id $p.Id -Force -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            continue
+        }
+    }
 }
